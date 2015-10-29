@@ -1,8 +1,6 @@
-#projects-wrapper
-#experiments-wrapper
-#variations-wrapper
-
 - if @user_preference && @user_preference.optimizely_token
   :javascript
-    Optimizely.fetcher = new Optimizely.Fetcher('#{escape_javascript @user_preference.optimizely_token}')
+    Optimizely.fetcher = new Optimizely.Fetcher({
+      token: '#{escape_javascript @user_preference.optimizely_token}'
+    })
     Optimizely.fetcher.fetchProjects()

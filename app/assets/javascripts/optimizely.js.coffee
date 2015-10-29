@@ -1,20 +1,28 @@
 @Optimizely = { fetcher: null }
 
 class Optimizely.Fetcher
-  @token : null
   @base_url : 'https://www.optimizelyapis.com/experiment/v1'
 
-  constructor : (token) ->
+  constructor : (options) ->
+    throw 'Token option required!' unless options.token
+
+    options.wrapper = 'body' unless $(options.wrapper).length
+
+    @options = options
     fetcher = @
+
+    $(options.wrapper).append('<div id="projects-wrapper"></div>')
+    $(options.wrapper).append('<div id="experiments-wrapper"></div>')
+    $(options.wrapper).append('<div id="variations-wrapper"></div>')
 
     $.ajaxSetup
       beforeSend: (xhr) ->
-        xhr.setRequestHeader('Token', token)
+        xhr.setRequestHeader('Token', options.token)
 
-    $('#projects-wrapper').on 'change', 'select', ->
+    $("#{options.wrapper} #projects-wrapper").on 'change', 'select', ->
       fetcher.fetchExperiments(@value)
 
-    $('#experiments-wrapper').on 'change', 'select', ->
+    $("#{options.wrapper} #experiments-wrapper").on 'change', 'select', ->
       fetcher.fetchVariations(@value)
 
   fetchFromOptimizely : (endpoint, callback) ->
@@ -25,22 +33,32 @@ class Optimizely.Fetcher
       success: (results) -> callback(results)
 
   fetchProjects : ->
+    fetcher = @
+
     @fetchFromOptimizely 'projects', (results) ->
       choices = results.map (result) -> "<option value=#{result.id}>#{result.project_name}</option>"
-      $('#projects-wrapper').html("<select><option></option>#{choices}</select>")
+      $("#{fetcher.options.wrapper} #projects-wrapper").html("<select><option></option>#{choices}</select>")
 
   fetchExperiments : (projectId) ->
+    fetcher = @
+
+    $(fetcher.options.wrapper).find('#variations-wrapper, #experiments-wrapper').html('')
+
     return unless projectId
 
     @fetchFromOptimizely "projects/#{projectId}/experiments", (results) ->
       choices = results.map (result) -> "<option value=#{result.id}>#{result.description}</option>"
-      $('#experiments-wrapper').html("<select><option></option>#{choices}</select>")
+      $("#{fetcher.options.wrapper} #experiments-wrapper").html("<select><option></option>#{choices}</select>")
 
   fetchVariations : (experimentId) ->
+    fetcher = @
+
+    $(fetcher.options.wrapper).find('#variations-wrapper').html('')
+
     return unless experimentId
 
     $('#variations-wrapper').html('')
 
     @fetchFromOptimizely "experiments/#{experimentId}/variations", (results) ->
       results.forEach (result) ->
-        $('#variations-wrapper').append("<pre>#{JSON.stringify(result)}</pre>")
+        $("#{fetcher.options.wrapper} #variations-wrapper").append("<pre>#{JSON.stringify(result)}</pre>")
